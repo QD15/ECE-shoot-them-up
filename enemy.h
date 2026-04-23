@@ -6,7 +6,7 @@
 #define ENEMY_W           50
 #define ENEMY_H           50
 #define MAX_ENNEMIS       8
-#define MAX_BALLES_ENE    16  /* balles tirees par les ennemis */
+#define MAX_BALLES_ENE    16  
 
 typedef struct {
     float x, y;
