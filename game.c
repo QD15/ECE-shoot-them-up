@@ -8,7 +8,7 @@
 #include "enemy.h"
 #include "input.h"
 
-/* Les trois etats du jeu */
+
 #define ETAT_MENU 0
 #define ETAT_JEU  1
 #define ETAT_FIN  2
