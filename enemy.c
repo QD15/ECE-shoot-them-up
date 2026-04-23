@@ -3,10 +3,8 @@
 #include <stdlib.h>
 #include "enemy.h"
 
-/* Tableau global des balles ennemies */
 BalleEnnemie balles_ene[MAX_BALLES_ENE];
 
-/* Sprite de l'ennemi (charge une seule fois, partage par tous les ennemis) */
 static ALLEGRO_BITMAP *sprite_ennemi = NULL;
 
 void ennemis_init(Enemy ennemis[]) {
@@ -16,7 +14,6 @@ void ennemis_init(Enemy ennemis[]) {
         ennemis[i].timer_tir = 0;
     }
 
-    /* Charger le sprite alien (doit etre dans le meme dossier que l'exe) */
     if (sprite_ennemi == NULL)
         sprite_ennemi = al_load_bitmap("Image extraterestre.png");
 }
@@ -28,7 +25,6 @@ void ennemis_spawn(Enemy ennemis[]) {
             ennemis[i].active = 1;
             ennemis[i].x = 810;
             ennemis[i].y = 50 + rand() % 500;
-            /* Decaler le premier tir aleatoirement pour eviter que tous tirent en meme temps */
             ennemis[i].timer_tir = 60 + rand() % 120;
             return;
         }
@@ -42,18 +38,15 @@ void ennemis_update(Enemy ennemis[]) {
 
         ennemis[i].x -= 2;
 
-        /* Desactiver si sorti de l'ecran */
         if (ennemis[i].x < -ENEMY_W) {
             ennemis[i].active = 0;
             continue;
         }
 
-        /* Tir : decremente le timer, tire quand il arrive a 0 */
         ennemis[i].timer_tir--;
         if (ennemis[i].timer_tir <= 0) {
-            ennemis[i].timer_tir = 90 + rand() % 60; /* prochain tir dans 90-150 frames */
+            ennemis[i].timer_tir = 90 + rand() % 60;
 
-            /* Chercher une balle inactive */
             for (j = 0; j < MAX_BALLES_ENE; j++) {
                 if (!balles_ene[j].active) {
                     balles_ene[j].active = 1;
@@ -72,7 +65,6 @@ void ennemis_draw(Enemy ennemis[]) {
         if (!ennemis[i].active) continue;
 
         if (sprite_ennemi) {
-            /* Dessiner le sprite alien mis a l'echelle sur la hitbox */
             al_draw_scaled_bitmap(
                 sprite_ennemi,
                 0, 0,
@@ -83,7 +75,6 @@ void ennemis_draw(Enemy ennemis[]) {
                 0
             );
         } else {
-            /* Fallback si le PNG n'est pas trouve */
             al_draw_filled_rectangle(
                 ennemis[i].x, ennemis[i].y,
                 ennemis[i].x + ENEMY_W, ennemis[i].y + ENEMY_H,
@@ -92,7 +83,6 @@ void ennemis_draw(Enemy ennemis[]) {
     }
 }
 
-/* Libere le sprite en memoire (a appeler dans game_destroy) */
 void ennemis_destroy(void) {
     if (sprite_ennemi) {
         al_destroy_bitmap(sprite_ennemi);
@@ -100,7 +90,6 @@ void ennemis_destroy(void) {
     }
 }
 
-/* --- Balles ennemies --- */
 
 void balles_ene_init(void) {
     int i;
@@ -112,7 +101,7 @@ void balles_ene_update(void) {
     int i;
     for (i = 0; i < MAX_BALLES_ENE; i++) {
         if (!balles_ene[i].active) continue;
-        balles_ene[i].x -= 3;  /* vitesse 3 vers la gauche */
+        balles_ene[i].x -= 3; 
         if (balles_ene[i].x < -10)
             balles_ene[i].active = 0;
     }
@@ -125,6 +114,6 @@ void balles_ene_draw(void) {
             al_draw_filled_rectangle(
                 balles_ene[i].x, balles_ene[i].y,
                 balles_ene[i].x + 10, balles_ene[i].y + 4,
-                al_map_rgb(255, 140, 0));  /* orange */
+                al_map_rgb(255, 140, 0)); 
     }
 }
