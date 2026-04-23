@@ -11,7 +11,6 @@ void player_init(Player *p) {
     for (i = 0; i < MAX_BALLES; i++)
         p->balles[i].active = 0;
 
-    /* Charger le sprite (le PNG doit etre dans le meme dossier que l'exe) */
     p->sprite = al_load_bitmap("pngegg.png");
 }
 
@@ -23,7 +22,6 @@ void player_update(Player *p, int up, int down, int left, int right, int tir) {
     if (left)  p->x -= p->vitesse;
     if (right) p->x += p->vitesse;
 
-    /* Garder dans l'ecran */
     if (p->x < 0)              p->x = 0;
     if (p->x > 800 - PLAYER_W) p->x = 800 - PLAYER_W;
     if (p->y < 0)              p->y = 0;
@@ -56,7 +54,6 @@ void player_draw(Player *p) {
     int i;
 
     if (p->sprite) {
-        /* Dessiner le sprite mis a l'echelle sur la hitbox */
         al_draw_scaled_bitmap(
             p->sprite,
             0, 0,
@@ -67,12 +64,10 @@ void player_draw(Player *p) {
             0
         );
     } else {
-        /* Fallback si le PNG n'est pas trouve */
         al_draw_filled_rectangle(p->x, p->y, p->x + PLAYER_W, p->y + PLAYER_H,
             al_map_rgb(100, 200, 255));
     }
 
-    /* Balles du joueur */
     for (i = 0; i < MAX_BALLES; i++) {
         if (p->balles[i].active)
             al_draw_filled_rectangle(
