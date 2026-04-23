@@ -34,12 +34,7 @@ void game_init(void) {
     balles_ene_init();
 }
 
-/* ---------- Detection de collision (AABB) ----------
-   On verifie si deux rectangles se chevauchent.
-   dx = ecart horizontal entre balle et ennemi.
-   Si dx est compris entre 0 et ENEMY_W, il y a overlap horizontal.
-   Idem pour dy en vertical.
-*/
+
 static void verifier_collisions(void) {
     int i, j;
     float dx, dy;
@@ -54,7 +49,6 @@ static void verifier_collisions(void) {
             dy = player.balles[i].y - ennemis[j].y;
 
             if (dx > 0 && dx < ENEMY_W && dy > 0 && dy < ENEMY_H) {
-                /* Collision : on desactive les deux et on incremente le score */
                 player.balles[i].active = 0;
                 ennemis[j].active = 0;
                 score++;
@@ -63,7 +57,6 @@ static void verifier_collisions(void) {
     }
 }
 
-/* Verifie si une balle ennemie touche le joueur */
 static int balle_ene_touche_joueur(void) {
     int i;
     float dx, dy;
@@ -79,7 +72,7 @@ static int balle_ene_touche_joueur(void) {
     return 0;
 }
 
-/* Verifie si le joueur touche un ennemi (fin de partie) */
+
 static int joueur_touche_ennemi(void) {
     int j;
     float dx, dy;
@@ -94,12 +87,11 @@ static int joueur_touche_ennemi(void) {
     return 0;
 }
 
-/* ---------- Mise a jour ---------- */
+
 
 void game_update(void) {
     if (etat == ETAT_MENU) {
         if (key_enter) {
-            /* Reinitialiser et demarrer */
             score = 0;
             frame = 0;
             intervalle_spawn = 90;
@@ -117,7 +109,6 @@ void game_update(void) {
         return;
     }
 
-    /* --- Etat ETAT_JEU --- */
 
     player_update(&player, key_up, key_down, key_left, key_right, key_space);
     ennemis_update(ennemis);
@@ -125,11 +116,9 @@ void game_update(void) {
 
     frame++;
 
-    /* Faire apparaitre un ennemi toutes les <intervalle_spawn> frames */
     if (frame % intervalle_spawn == 0)
         ennemis_spawn(ennemis);
 
-    /* Augmenter la difficulte toutes les 600 frames */
     if (frame % 600 == 0 && intervalle_spawn > 30)
         intervalle_spawn -= 10;
 
@@ -139,7 +128,6 @@ void game_update(void) {
         etat = ETAT_FIN;
 }
 
-/* ---------- Dessin ---------- */
 
 void game_draw(void) {
     char buf[64];
@@ -167,7 +155,6 @@ void game_draw(void) {
         return;
     }
 
-    /* ETAT_JEU */
     ennemis_draw(ennemis);
     balles_ene_draw();
     player_draw(&player);
@@ -178,6 +165,6 @@ void game_draw(void) {
 
 void game_destroy(void) {
     player_destroy(&player);
-    ennemis_destroy();   /* libere le sprite alien */
+    ennemis_destroy();  
     al_destroy_font(font);
 }
