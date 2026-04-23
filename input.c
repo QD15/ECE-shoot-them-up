@@ -1,14 +1,13 @@
 #include <allegro5/allegro.h>
 #include "input.h"
 
-/* Etat de chaque touche */
 int key_up = 0, key_down = 0, key_left = 0, key_right = 0;
 int key_space = 0, key_enter = 0, key_escape = 0;
 
 void input_handle_event(ALLEGRO_EVENT *ev) {
     int val;
 
-    /* val = 1 si touche pressee, 0 si relachee */
+   
     if (ev->type == ALLEGRO_EVENT_KEY_DOWN) val = 1;
     else if (ev->type == ALLEGRO_EVENT_KEY_UP) val = 0;
     else return;
