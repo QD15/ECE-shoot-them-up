@@ -20,9 +20,8 @@ static ALLEGRO_FONT *font;
 static int etat;
 static int score;
 static int frame;
-static int intervalle_spawn;  /* nombre de frames entre deux apparitions d'ennemis */
+static int intervalle_spawn; 
 
-/* ---------- Initialisation ---------- */
 
 void game_init(void) {
     font = al_create_builtin_font();
