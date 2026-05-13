@@ -25,6 +25,53 @@
 
 #define DUREE_NIVEAU  3600   /* 60 s x 60 fps */
 
+/* ============================================================
+   FOND ETOILE
+   ============================================================ */
+#define NB_ETOILES  40
+
+typedef struct {
+    float x, y;
+    float rayon;
+    unsigned char luminosite; /* 0-255 */
+} Etoile;
+
+static Etoile etoiles[NB_ETOILES];
+
+#define VITESSE_ETOILES  1.2f
+
+static void etoiles_init(void) {
+    int i;
+    for (i = 0; i < NB_ETOILES; i++) {
+        etoiles[i].x          = (float)(rand() % 800);
+        etoiles[i].y          = (float)(rand() % 600);
+        etoiles[i].rayon      = 1.5f + (float)(rand() % 15) / 10.0f; /* 1.5-3.0 px */
+        etoiles[i].luminosite = 180 + rand() % 76;                    /* 180-255    */
+    }
+}
+
+static void etoiles_update(void) {
+    int i;
+    for (i = 0; i < NB_ETOILES; i++) {
+        etoiles[i].x -= VITESSE_ETOILES;
+        if (etoiles[i].x < 0.0f) {
+            etoiles[i].x = 800.0f;
+            etoiles[i].y = (float)(rand() % 600);
+        }
+    }
+}
+
+static void etoiles_draw(void) {
+    int i;
+    unsigned char l;
+    for (i = 0; i < NB_ETOILES; i++) {
+        l = etoiles[i].luminosite;
+        al_draw_filled_circle(etoiles[i].x, etoiles[i].y,
+            etoiles[i].rayon,
+            al_map_rgb(l, l, (unsigned char)(l < 30 ? 0 : l - 30))); /* teinte bleutee */
+    }
+}
+
 static ALLEGRO_FONT *font_titre = NULL;
 static ALLEGRO_FONT *font_menu  = NULL;
 static ALLEGRO_FONT *font_hud   = NULL;
@@ -37,6 +84,11 @@ static int score;
 static int frame;
 static int intervalle_spawn;
 static int niveau;
+static int vies;
+
+#define VIES_MAX        3
+#define INVINCIBLE_DUREE 120  /* 2 s d'invincibilite apres un degat */
+static int invincible;        /* compteur frames d'invincibilite     */
 
 static void demarrer_niveau(void);
 
@@ -56,7 +108,11 @@ void game_init(void) {
     score  = 0;
     frame  = 0;
     niveau = 1;
+    vies   = VIES_MAX;
+    invincible = 0;
     intervalle_spawn = 90;
+
+    etoiles_init();
 
     player_init(&player);
     ennemis_init(ennemis);
@@ -69,6 +125,8 @@ void game_init(void) {
 static void demarrer_niveau(void) {
     score = 0;
     frame = 0;
+    vies  = VIES_MAX;
+    invincible = 0;
 
     player_init(&player);
     ennemis_init(ennemis);
@@ -188,6 +246,9 @@ static int joueur_touche_boss(void) {
    ============================================================ */
 void game_update(void) {
 
+    /* Les etoiles defilent dans tous les etats (menu inclus) */
+    etoiles_update();
+
     /* --- MENU --- */
     if (etat == ETAT_MENU) {
         static int prev_1 = 0, prev_2 = 0, prev_3 = 0;
@@ -220,8 +281,17 @@ void game_update(void) {
 
         verifier_collisions_boss();
 
-        if (boss_balle_touche_joueur() || joueur_touche_boss())
-            etat = ETAT_FIN;
+        if (invincible > 0) {
+            invincible--;
+        } else if (boss_balle_touche_joueur() || joueur_touche_boss()) {
+            vies--;
+            if (vies <= 0)
+                etat = ETAT_FIN;
+            else {
+                invincible = INVINCIBLE_DUREE;
+                player_init(&player);  /* repositionne le joueur */
+            }
+        }
 
         return;
     }
@@ -243,9 +313,16 @@ void game_update(void) {
 
     verifier_collisions();
 
-    if (joueur_touche_ennemi() || balle_ene_touche_joueur()) {
-        etat = ETAT_FIN;
-        return;
+    if (invincible > 0) {
+        invincible--;
+    } else if (joueur_touche_ennemi() || balle_ene_touche_joueur()) {
+        vies--;
+        if (vies <= 0) {
+            etat = ETAT_FIN;
+            return;
+        }
+        invincible = INVINCIBLE_DUREE;
+        player_init(&player);  /* repositionne le joueur */
     }
 
     /* Fin des 60 secondes */
@@ -259,6 +336,27 @@ void game_update(void) {
         }
     }
 }
+
+/* ============================================================
+   AFFICHAGE DES VIES (coeurs en bas a gauche)
+   ============================================================ */
+static void draw_vies(void) {
+    int i;
+    char coeur[4] = "\x03";  /* caractere coeur ASCII (affichage fallback) */
+    float x = 10.0f;
+    float y = 570.0f;
+    for (i = 0; i < VIES_MAX; i++) {
+        ALLEGRO_COLOR couleur = (i < vies)
+            ? al_map_rgb(255, 60, 80)    /* vie restante : rouge vif  */
+            : al_map_rgb(60, 60, 60);    /* vie perdue   : gris sombre */
+        /* Dessine un petit cercle plein comme icone de vie */
+        al_draw_filled_circle(x + 10, y + 8, 8, couleur);
+        al_draw_circle(x + 10, y + 8, 8, al_map_rgb(200, 200, 200), 1.0f);
+        x += 26.0f;
+    }
+    (void)coeur;
+}
+
 
 /* ============================================================
    BARRE DE VIE DU BOSS
@@ -304,6 +402,9 @@ void game_draw(void) {
     int  temps_restant;
 
     al_clear_to_color(al_map_rgb(0, 0, 0));
+
+    /* Fond etoile dessine en premier (dans tous les etats) */
+    etoiles_draw();
 
     /* --- MENU --- */
     if (etat == ETAT_MENU) {
@@ -357,6 +458,7 @@ void game_draw(void) {
 
         sprintf(buf, "Score : %d", score);
         al_draw_text(font_hud, al_map_rgb(255, 255, 255), 10, 10, 0, buf);
+        draw_vies();
         return;
     }
 
@@ -376,6 +478,8 @@ void game_draw(void) {
     sprintf(buf, "Niveau %d", niveau);
     al_draw_text(font_hud, al_map_rgb(150, 200, 255),
         400, 10, ALLEGRO_ALIGN_CENTRE, buf);
+
+    draw_vies();
 }
 
 /* ============================================================
