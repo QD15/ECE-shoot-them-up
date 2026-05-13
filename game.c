@@ -1,6 +1,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "game.h"
@@ -8,49 +9,95 @@
 #include "enemy.h"
 #include "input.h"
 
+/* ============================================================
+   ETATS
+   ETAT_MENU     : menu titre
+   ETAT_JEU      : partie en cours
+   ETAT_BOSS     : combat contre le boss (niveau 3 uniquement)
+   ETAT_FIN      : game over
+   ETAT_VICTOIRE : niveau / boss vaincu
+   ============================================================ */
+#define ETAT_MENU     0
+#define ETAT_JEU      1
+#define ETAT_BOSS     2
+#define ETAT_FIN      3
+#define ETAT_VICTOIRE 4
 
-#define ETAT_MENU 0
-#define ETAT_JEU  1
-#define ETAT_FIN  2
+#define DUREE_NIVEAU  3600   /* 60 s x 60 fps */
+
+static ALLEGRO_FONT *font_titre = NULL;
+static ALLEGRO_FONT *font_menu  = NULL;
+static ALLEGRO_FONT *font_hud   = NULL;
 
 static Player player;
-static Enemy ennemis[MAX_ENNEMIS];
-static ALLEGRO_FONT *font;
+static Enemy  ennemis[MAX_ENNEMIS];
 
 static int etat;
 static int score;
 static int frame;
-static int intervalle_spawn; 
+static int intervalle_spawn;
+static int niveau;
 
+static void demarrer_niveau(void);
 
+/* ============================================================
+   INITIALISATION
+   ============================================================ */
 void game_init(void) {
-    font = al_create_builtin_font();
-    etat = ETAT_MENU;
-    score = 0;
-    frame = 0;
+    font_titre = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 52, 0);
+    font_menu  = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 30, 0);
+    font_hud   = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 20, 0);
+
+    if (!font_titre) font_titre = al_create_builtin_font();
+    if (!font_menu)  font_menu  = al_create_builtin_font();
+    if (!font_hud)   font_hud   = al_create_builtin_font();
+
+    etat   = ETAT_MENU;
+    score  = 0;
+    frame  = 0;
+    niveau = 1;
     intervalle_spawn = 90;
+
     player_init(&player);
     ennemis_init(ennemis);
     balles_ene_init();
 }
 
+/* ============================================================
+   DEMARRER UN NIVEAU
+   ============================================================ */
+static void demarrer_niveau(void) {
+    score = 0;
+    frame = 0;
 
+    player_init(&player);
+    ennemis_init(ennemis);
+    balles_ene_init();
+
+    if      (niveau == 1) intervalle_spawn = 120;
+    else if (niveau == 2) intervalle_spawn = 70;
+    else                  intervalle_spawn = 40;
+
+    etat = ETAT_JEU;
+}
+
+
+
+/* ============================================================
+   COLLISIONS ENNEMIS NORMAUX
+   ============================================================ */
 static void verifier_collisions(void) {
     int i, j;
     float dx, dy;
-
     for (i = 0; i < MAX_BALLES; i++) {
         if (!player.balles[i].active) continue;
-
         for (j = 0; j < MAX_ENNEMIS; j++) {
             if (!ennemis[j].active) continue;
-
             dx = player.balles[i].x - ennemis[j].x;
             dy = player.balles[i].y - ennemis[j].y;
-
             if (dx > 0 && dx < ENEMY_W && dy > 0 && dy < ENEMY_H) {
                 player.balles[i].active = 0;
-                ennemis[j].active = 0;
+                ennemis[j].active       = 0;
                 score++;
             }
         }
@@ -72,11 +119,9 @@ static int balle_ene_touche_joueur(void) {
     return 0;
 }
 
-
 static int joueur_touche_ennemi(void) {
     int j;
     float dx, dy;
-
     for (j = 0; j < MAX_ENNEMIS; j++) {
         if (!ennemis[j].active) continue;
         dx = player.x - ennemis[j].x;
@@ -87,29 +132,103 @@ static int joueur_touche_ennemi(void) {
     return 0;
 }
 
+/* ============================================================
+   COLLISIONS BOSS
+   ============================================================ */
 
+/* Balle joueur touche le boss -> retire 1 PV */
+static void verifier_collisions_boss(void) {
+    int i;
+    float dx, dy;
+    if (!boss.active) return;
 
-void game_update(void) {
-    if (etat == ETAT_MENU) {
-        if (key_enter) {
-            score = 0;
-            frame = 0;
-            intervalle_spawn = 90;
-            player_init(&player);
-            ennemis_init(ennemis);
-            balles_ene_init();
-            etat = ETAT_JEU;
+    for (i = 0; i < MAX_BALLES; i++) {
+        if (!player.balles[i].active) continue;
+        dx = player.balles[i].x - boss.x;
+        dy = player.balles[i].y - boss.y;
+        if (dx > 0 && dx < BOSS_W && dy > 0 && dy < BOSS_H) {
+            player.balles[i].active = 0;
+            boss.hp--;
+            score++;
+            if (boss.hp <= 0) {
+                boss.active = 0;   /* boss mort -> victoire */
+                etat = ETAT_VICTOIRE;
+            }
         }
+    }
+}
+
+/* Balle du boss touche le joueur */
+static int boss_balle_touche_joueur(void) {
+    int i;
+    float dx, dy;
+    for (i = 0; i < MAX_BOSS_BALLES; i++) {
+        if (!boss_balles[i].active) continue;
+        dx = boss_balles[i].x - player.x;
+        dy = boss_balles[i].y - player.y;
+        if (dx > -7 && dx < PLAYER_W && dy > -7 && dy < PLAYER_H) {
+            boss_balles[i].active = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Le joueur touche le boss directement */
+static int joueur_touche_boss(void) {
+    float dx, dy;
+    if (!boss.active) return 0;
+    dx = player.x - boss.x;
+    dy = player.y - boss.y;
+    return (dx > -PLAYER_W && dx < BOSS_W && dy > -PLAYER_H && dy < BOSS_H);
+}
+
+/* ============================================================
+   MISE A JOUR
+   ============================================================ */
+void game_update(void) {
+
+    /* --- MENU --- */
+    if (etat == ETAT_MENU) {
+        static int prev_1 = 0, prev_2 = 0, prev_3 = 0;
+        if (key_1 && !prev_1) { niveau = 1; demarrer_niveau(); }
+        if (key_2 && !prev_2) { niveau = 2; demarrer_niveau(); }
+        if (key_3 && !prev_3) { niveau = 3; demarrer_niveau(); }
+        prev_1 = key_1; prev_2 = key_2; prev_3 = key_3;
         return;
     }
 
+    /* --- GAME OVER --- */
     if (etat == ETAT_FIN) {
-        if (key_enter)
-            etat = ETAT_MENU;
+        if (key_enter) etat = ETAT_MENU;
         return;
     }
 
+    /* --- VICTOIRE --- */
+    if (etat == ETAT_VICTOIRE) {
+        if (key_enter) etat = ETAT_MENU;
+        return;
+    }
 
+    /* ================================================================
+       COMBAT BOSS (niveau 3 apres les 60 secondes)
+       ================================================================ */
+    if (etat == ETAT_BOSS) {
+        player_update(&player, key_up, key_down, key_left, key_right, key_space);
+        boss_update();
+        boss_balles_update();
+
+        verifier_collisions_boss();
+
+        if (boss_balle_touche_joueur() || joueur_touche_boss())
+            etat = ETAT_FIN;
+
+        return;
+    }
+
+    /* ================================================================
+       EN JEU (phase normale)
+       ================================================================ */
     player_update(&player, key_up, key_down, key_left, key_right, key_space);
     ennemis_update(ennemis);
     balles_ene_update();
@@ -119,52 +238,154 @@ void game_update(void) {
     if (frame % intervalle_spawn == 0)
         ennemis_spawn(ennemis);
 
-    if (frame % 600 == 0 && intervalle_spawn > 30)
+    if (niveau < 3 && frame % 600 == 0 && intervalle_spawn > 30)
         intervalle_spawn -= 10;
 
     verifier_collisions();
 
-    if (joueur_touche_ennemi() || balle_ene_touche_joueur())
+    if (joueur_touche_ennemi() || balle_ene_touche_joueur()) {
         etat = ETAT_FIN;
+        return;
+    }
+
+    /* Fin des 60 secondes */
+    if (frame >= DUREE_NIVEAU) {
+        if (niveau == 3) {
+            /* Niveau 3 -> passer au combat boss */
+            boss_init();
+            etat = ETAT_BOSS;
+        } else {
+            etat = ETAT_VICTOIRE;
+        }
+    }
 }
 
+/* ============================================================
+   BARRE DE VIE DU BOSS
+   Affichee en haut au centre pendant ETAT_BOSS
+   ============================================================ */
+static void draw_boss_hp_bar(void) {
+    float ratio    = (float)boss.hp / (float)BOSS_HP_MAX;
+    float bar_w    = 300.0f;
+    float bar_x    = 400 - bar_w / 2;
+    float bar_y    = 10;
+    float bar_h    = 18;
 
+    /* Fond gris */
+    al_draw_filled_rectangle(bar_x, bar_y,
+        bar_x + bar_w, bar_y + bar_h,
+        al_map_rgb(60, 60, 60));
+
+    /* Portion de vie restante : vert -> jaune -> rouge selon les PV */
+    ALLEGRO_COLOR couleur;
+    if (ratio > 0.6f)       couleur = al_map_rgb(80,  220, 80);
+    else if (ratio > 0.3f)  couleur = al_map_rgb(255, 200,  0);
+    else                    couleur = al_map_rgb(255,  50, 50);
+
+    al_draw_filled_rectangle(bar_x, bar_y,
+        bar_x + bar_w * ratio, bar_y + bar_h,
+        couleur);
+
+    /* Contour */
+    al_draw_rectangle(bar_x, bar_y,
+        bar_x + bar_w, bar_y + bar_h,
+        al_map_rgb(200, 200, 200), 1.5f);
+
+    /* Label */
+    al_draw_text(font_hud, al_map_rgb(255, 255, 255),
+        400, bar_y + 22, ALLEGRO_ALIGN_CENTRE, "BOSS");
+}
+
+/* ============================================================
+   DESSIN
+   ============================================================ */
 void game_draw(void) {
     char buf[64];
+    int  temps_restant;
 
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
+    /* --- MENU --- */
     if (etat == ETAT_MENU) {
-        al_draw_text(font, al_map_rgb(100, 200, 255),
-            400, 240, ALLEGRO_ALIGN_CENTRE, "STELLAR STRIKE");
-        al_draw_text(font, al_map_rgb(200, 200, 200),
-            400, 280, ALLEGRO_ALIGN_CENTRE, "Fleches : deplacer   Espace : tirer");
-        al_draw_text(font, al_map_rgb(255, 255, 100),
-            400, 320, ALLEGRO_ALIGN_CENTRE, "Appuyez sur ENTREE pour commencer");
+        al_draw_text(font_titre, al_map_rgb(100, 200, 255),
+            400, 140, ALLEGRO_ALIGN_CENTRE, "L'INVASION");
+        al_draw_text(font_menu, al_map_rgb(80, 220, 80),
+            400, 260, ALLEGRO_ALIGN_CENTRE, "1  -  Niveau 1  (Facile)");
+        al_draw_text(font_menu, al_map_rgb(255, 200, 0),
+            400, 320, ALLEGRO_ALIGN_CENTRE, "2  -  Niveau 2  (Moyen)");
+        al_draw_text(font_menu, al_map_rgb(255, 80, 80),
+            400, 380, ALLEGRO_ALIGN_CENTRE, "3  -  Niveau 3  (Difficile)");
         return;
     }
 
+    /* --- GAME OVER --- */
     if (etat == ETAT_FIN) {
-        al_draw_text(font, al_map_rgb(255, 80, 80),
-            400, 240, ALLEGRO_ALIGN_CENTRE, "GAME OVER");
-        sprintf(buf, "Score final : %d", score);
-        al_draw_text(font, al_map_rgb(255, 255, 255),
-            400, 280, ALLEGRO_ALIGN_CENTRE, buf);
-        al_draw_text(font, al_map_rgb(200, 200, 200),
-            400, 320, ALLEGRO_ALIGN_CENTRE, "Appuyez sur ENTREE pour rejouer");
+        al_draw_text(font_titre, al_map_rgb(255, 80, 80),
+            400, 200, ALLEGRO_ALIGN_CENTRE, "GAME OVER");
+        sprintf(buf, "Score : %d", score);
+        al_draw_text(font_menu, al_map_rgb(255, 255, 255),
+            400, 300, ALLEGRO_ALIGN_CENTRE, buf);
+        al_draw_text(font_menu, al_map_rgb(150, 150, 150),
+            400, 370, ALLEGRO_ALIGN_CENTRE, "ENTREE  ->  Menu");
         return;
     }
 
+    /* --- VICTOIRE --- */
+    if (etat == ETAT_VICTOIRE) {
+        /* Message different si on vient de tuer le boss */
+        if (niveau == 3)
+            al_draw_text(font_titre, al_map_rgb(255, 215, 0),
+                400, 180, ALLEGRO_ALIGN_CENTRE, "BOSS VAINCU !");
+        else
+            al_draw_text(font_titre, al_map_rgb(80, 255, 120),
+                400, 180, ALLEGRO_ALIGN_CENTRE, "NIVEAU TERMINE !");
+
+        sprintf(buf, "Score : %d", score);
+        al_draw_text(font_menu, al_map_rgb(255, 255, 255),
+            400, 290, ALLEGRO_ALIGN_CENTRE, buf);
+        al_draw_text(font_menu, al_map_rgb(150, 150, 150),
+            400, 360, ALLEGRO_ALIGN_CENTRE, "ENTREE  ->  Menu");
+        return;
+    }
+
+    /* --- COMBAT BOSS --- */
+    if (etat == ETAT_BOSS) {
+        boss_draw();
+        boss_balles_draw();
+        player_draw(&player);
+        draw_boss_hp_bar();
+
+        sprintf(buf, "Score : %d", score);
+        al_draw_text(font_hud, al_map_rgb(255, 255, 255), 10, 10, 0, buf);
+        return;
+    }
+
+    /* --- EN JEU --- */
     ennemis_draw(ennemis);
     balles_ene_draw();
     player_draw(&player);
 
     sprintf(buf, "Score : %d", score);
-    al_draw_text(font, al_map_rgb(255, 255, 255), 10, 10, 0, buf);
+    al_draw_text(font_hud, al_map_rgb(255, 255, 255), 10, 10, 0, buf);
+
+    temps_restant = (DUREE_NIVEAU - frame) / 60;
+    sprintf(buf, "Temps : %ds", temps_restant);
+    al_draw_text(font_hud, al_map_rgb(255, 255, 100),
+        790, 10, ALLEGRO_ALIGN_RIGHT, buf);
+
+    sprintf(buf, "Niveau %d", niveau);
+    al_draw_text(font_hud, al_map_rgb(150, 200, 255),
+        400, 10, ALLEGRO_ALIGN_CENTRE, buf);
 }
 
+/* ============================================================
+   DESTRUCTION
+   ============================================================ */
 void game_destroy(void) {
     player_destroy(&player);
-    ennemis_destroy();  
-    al_destroy_font(font);
+    ennemis_destroy();
+    boss_destroy();
+    al_destroy_font(font_titre);
+    al_destroy_font(font_menu);
+    al_destroy_font(font_hud);
 }
