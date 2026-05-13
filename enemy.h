@@ -3,10 +3,13 @@
 
 #include <allegro5/allegro.h>
 
-#define ENEMY_W           50
-#define ENEMY_H           50
-#define MAX_ENNEMIS       8
-#define MAX_BALLES_ENE    16  
+/* ============================================================
+   ENNEMIS NORMAUX
+   ============================================================ */
+#define ENEMY_W        50
+#define ENEMY_H        50
+#define MAX_ENNEMIS     8
+#define MAX_BALLES_ENE 16
 
 typedef struct {
     float x, y;
@@ -16,9 +19,8 @@ typedef struct {
 typedef struct {
     float x, y;
     int active;
-    int timer_tir;  
+    int timer_tir;
 } Enemy;
-
 
 extern BalleEnnemie balles_ene[MAX_BALLES_ENE];
 
@@ -31,5 +33,45 @@ void ennemis_destroy(void);
 void balles_ene_init(void);
 void balles_ene_update(void);
 void balles_ene_draw(void);
+
+/* ============================================================
+   BOSS (niveau 3 uniquement)
+   - Taille : 150 x 150 px
+   - PV     : 15
+   - Tir en rafale de 3 balles en eventail
+   - Ses balles ont une direction (vx, vy) contrairement
+     aux balles ennemies normales qui vont tout droit
+   ============================================================ */
+#define BOSS_W        150
+#define BOSS_H        150
+#define BOSS_HP_MAX    15
+#define MAX_BOSS_BALLES 40
+
+typedef struct {
+    float x, y;
+    float vx, vy;   /* direction de la balle */
+    int active;
+} BossBalle;
+
+typedef struct {
+    float x, y;
+    float vitesse_y; /* mouvement vertical (rebondit en haut/bas) */
+    int active;
+    int hp;
+    int timer_tir;
+    ALLEGRO_BITMAP *sprite;
+} Boss;
+
+extern Boss       boss;
+extern BossBalle  boss_balles[MAX_BOSS_BALLES];
+
+void boss_init(void);
+void boss_update(void);
+void boss_draw(void);
+void boss_destroy(void);
+
+void boss_balles_init(void);
+void boss_balles_update(void);
+void boss_balles_draw(void);
 
 #endif
