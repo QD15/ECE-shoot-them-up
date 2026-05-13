@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ProjetMiSoutenance C)
+project(ProjetSoutenance C)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -11,19 +11,18 @@ link_directories(${MSYS2_PATH}/lib)
 
 # Sources
 add_executable(game
-    main.c
-    game.c
-    player.c
-    enemy.c
-    input.c
+        main.c
+        game.c
+        player.c
+        enemy.c
+        input.c
 )
 
-# Bibliotheques Allegro
+# Bibliotheques Allegro (allegro_ttf ajoute pour les polices de taille variable)
 target_link_libraries(game
-    allegro
-    allegro_primitives
-    allegro_font
-    allegro_image
+        allegro
+        allegro_primitives
+        allegro_font
+        allegro_ttf
+        allegro_image
 )
-
-
