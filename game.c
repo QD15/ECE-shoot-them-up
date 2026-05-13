@@ -8,7 +8,7 @@
 #include "player.h"
 #include "enemy.h"
 #include "input.h"
-
+#define ETAT_PAUSE    5
 /* ============================================================
    ETATS
    ETAT_MENU     : menu titre
@@ -246,6 +246,17 @@ static int joueur_touche_boss(void) {
    ============================================================ */
 void game_update(void) {
 
+    // ← AJOUTER CE BLOC EN PREMIER
+    static int prev_p = 0;
+    if (key_p && !prev_p) {
+        if (etat == ETAT_JEU  || etat == ETAT_BOSS)
+            etat = ETAT_PAUSE;
+        else if (etat == ETAT_PAUSE)
+            etat = ETAT_JEU;   // ou ETAT_BOSS selon d'où on vient
+    }
+    prev_p = key_p;
+
+    if (etat == ETAT_PAUSE) return;   // ← rien ne bouge en pause
     /* Les etoiles defilent dans tous les etats (menu inclus) */
     etoiles_update();
 
@@ -400,7 +411,16 @@ static void draw_boss_hp_bar(void) {
 void game_draw(void) {
     char buf[64];
     int  temps_restant;
-
+    // ← AJOUTER CE BLOC
+    if (etat == ETAT_PAUSE) {
+        al_draw_text(font_titre, al_map_rgb(255, 200, 0),
+            400, 220, ALLEGRO_ALIGN_CENTRE, "PAUSE");
+        al_draw_text(font_menu, al_map_rgb(200, 200, 200),
+            400, 310, ALLEGRO_ALIGN_CENTRE, "P  ->  Reprendre");
+        al_draw_text(font_menu, al_map_rgb(200, 200, 200),
+            400, 360, ALLEGRO_ALIGN_CENTRE, "ECHAP  ->  Quitter");
+        return;
+    }
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
     /* Fond etoile dessine en premier (dans tous les etats) */
