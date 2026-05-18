@@ -4,7 +4,7 @@
 int key_up = 0, key_down = 0, key_left = 0, key_right = 0;
 int key_space = 0, key_enter = 0, key_escape = 0;
 int key_1 = 0, key_2 = 0, key_3 = 0;
-int key_p = 0;   // ← NOUVEAU
+int key_p = 0;   
 
 void input_handle_event(ALLEGRO_EVENT *ev) {
     int val;
