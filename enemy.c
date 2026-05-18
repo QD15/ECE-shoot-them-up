@@ -4,9 +4,6 @@
 #include <math.h>
 #include "enemy.h"
 
-/* ============================================================
-   ENNEMIS NORMAUX
-   ============================================================ */
 BalleEnnemie balles_ene[MAX_BALLES_ENE];
 static ALLEGRO_BITMAP *sprite_ennemi = NULL;
 
@@ -118,11 +115,11 @@ BossBalle boss_balles[MAX_BOSS_BALLES];
 void boss_init(void) {
     int i;
 
-    boss.x         = 820;          /* entre depuis la droite */
-    boss.y         = 225;          /* centre vertical        */
-    boss.vitesse_y = 1.5f;         /* rebondit haut/bas      */
+    boss.x         = 820;
+    boss.y         = 225;
+    boss.vitesse_y = 1.5f;
     boss.hp        = BOSS_HP_MAX;
-    boss.timer_tir = 60;           /* premier tir apres 1 s  */
+    boss.timer_tir = 60;
     boss.active    = 1;
     boss.sprite    = al_load_bitmap("Boss.png");
 
@@ -130,7 +127,7 @@ void boss_init(void) {
         boss_balles[i].active = 0;
 }
 
-/* Tire une rafale de 5 balles en eventail vers la gauche */
+// Tire une rafale de 5 balles en eventail vers la gauche
 static void boss_tirer(void) {
     /* Angles en degres : -40 -20 0 +20 +40 */
     float angles[5] = { -40.0f, -20.0f, 0.0f, 20.0f, 40.0f };
@@ -142,7 +139,7 @@ static void boss_tirer(void) {
         float vx  = -vitesse * cosf(rad);  /* vers la gauche       */
         float vy  =  vitesse * sinf(rad);  /* composante verticale */
 
-        /* Chercher une balle inactive */
+        // Chercher une balle inactive
         for (j = 0; j < MAX_BOSS_BALLES; j++) {
             if (!boss_balles[j].active) {
                 boss_balles[j].active = 1;
@@ -159,16 +156,16 @@ static void boss_tirer(void) {
 void boss_update(void) {
     if (!boss.active) return;
 
-    /* Entree progressive depuis la droite */
+    // Entree progressive depuis la droite
     if (boss.x > 620)
         boss.x -= 2.0f;
 
-    /* Mouvement vertical avec rebond */
+    // Mouvement vertical avec rebond
     boss.y += boss.vitesse_y;
     if (boss.y < 20 || boss.y > 600 - BOSS_H - 20)
         boss.vitesse_y = -boss.vitesse_y;
 
-    /* Tir en rafale */
+    // Tir en rafale
     boss.timer_tir--;
     if (boss.timer_tir <= 0) {
         boss.timer_tir = 50 + rand() % 30;  /* rafale toutes les 50-80 frames */
@@ -186,11 +183,6 @@ void boss_draw(void) {
             al_get_bitmap_height(boss.sprite),
             boss.x, boss.y,
             BOSS_W, BOSS_H, 0);
-    } else {
-        /* Fallback rectangle violet si PNG absent */
-        al_draw_filled_rectangle(boss.x, boss.y,
-            boss.x + BOSS_W, boss.y + BOSS_H,
-            al_map_rgb(180, 0, 220));
     }
 }
 
@@ -208,7 +200,7 @@ void boss_balles_update(void) {
         if (!boss_balles[i].active) continue;
         boss_balles[i].x += boss_balles[i].vx;
         boss_balles[i].y += boss_balles[i].vy;
-        /* Desactiver si hors ecran */
+        //
         if (boss_balles[i].x < -10 || boss_balles[i].x > 810 ||
             boss_balles[i].y < -10 || boss_balles[i].y > 610)
             boss_balles[i].active = 0;
@@ -219,13 +211,9 @@ void boss_balles_draw(void) {
     int i;
     for (i = 0; i < MAX_BOSS_BALLES; i++) {
         if (!boss_balles[i].active) continue;
-        /* Balle du boss : cercle rouge plus gros */
+        // Balle du boss : cercle rouge plus gros
         al_draw_filled_circle(
             boss_balles[i].x, boss_balles[i].y,
             7, al_map_rgb(255, 40, 40));
-        /* Contour pour mieux les voir */
-        al_draw_circle(
-            boss_balles[i].x, boss_balles[i].y,
-            7, al_map_rgb(255, 150, 0), 1.5f);
     }
 }
