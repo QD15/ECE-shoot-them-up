@@ -18,32 +18,26 @@
 
 #define DUREE_NIVEAU  3600   // 60 s x 60 fps
 
-#define NB_ETOILES  40
+#define NB_ETOILES 25
 
 typedef struct {
     float x, y;
-    float rayon;
-    unsigned char luminosite; //0à255
 } Etoile;
 
 static Etoile etoiles[NB_ETOILES];
 
-#define VITESSE_ETOILES  1.2f
-
 static void etoiles_init(void) {
     int i;
     for (i = 0; i < NB_ETOILES; i++) {
-        etoiles[i].x          = (float)(rand() % 800);
-        etoiles[i].y          = (float)(rand() % 600);
-        etoiles[i].rayon      = 1.5f + (float)(rand() % 15) / 10.0f;
-        etoiles[i].luminosite = 180 + rand() % 76;
+        etoiles[i].x = (float)(rand() % 800);
+        etoiles[i].y = (float)(rand() % 600);
     }
 }
 
 static void etoiles_update(void) {
     int i;
     for (i = 0; i < NB_ETOILES; i++) {
-        etoiles[i].x -= VITESSE_ETOILES;
+        etoiles[i].x -= 1.5f;
         if (etoiles[i].x < 0.0f) {
             etoiles[i].x = 800.0f;
             etoiles[i].y = (float)(rand() % 600);
@@ -53,13 +47,9 @@ static void etoiles_update(void) {
 
 static void etoiles_draw(void) {
     int i;
-    unsigned char l;
-    for (i = 0; i < NB_ETOILES; i++) {
-        l = etoiles[i].luminosite;
-        al_draw_filled_circle(etoiles[i].x, etoiles[i].y,
-            etoiles[i].rayon,
-            al_map_rgb(l, l, (unsigned char)(l < 30 ? 0 : l - 30))); /* teinte bleutee */
-    }
+    for (i = 0; i < NB_ETOILES; i++)
+        al_draw_filled_circle(etoiles[i].x, etoiles[i].y, 1,
+            al_map_rgb(255, 255, 255));
 }
 
 static ALLEGRO_FONT *font_titre = NULL;
@@ -317,19 +307,16 @@ void game_update(void) {
 //affichage des vies
 static void draw_vies(void) {
     int i;
-    char coeur[4] = "\x03";
     float x = 10.0f;
     float y = 570.0f;
     for (i = 0; i < VIES_MAX; i++) {
         ALLEGRO_COLOR couleur = (i < vies)
-            ? al_map_rgb(255, 60, 80)    // vie restante : rouge vif
-            : al_map_rgb(60, 60, 60);    // vie perdue: gris sombre
-        // Dessine un petit cercle plein comme icone de vie
+            ? al_map_rgb(255, 60, 80)
+            : al_map_rgb(60, 60, 60);
         al_draw_filled_circle(x + 10, y + 8, 8, couleur);
         al_draw_circle(x + 10, y + 8, 8, al_map_rgb(200, 200, 200), 1.0f);
         x += 26.0f;
     }
-    (void)coeur;
 }
 
 
