@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ProjetSoutenance C)
+project(Projetttttt_V2 C)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -25,4 +25,6 @@ target_link_libraries(game
         allegro_font
         allegro_ttf
         allegro_image
+        allegro_audio
+        allegro_acodec
 )
