@@ -24,6 +24,6 @@ void input_handle_event(ALLEGRO_EVENT *ev) {
         case ALLEGRO_KEY_1:      key_1      = val; break;
         case ALLEGRO_KEY_2:      key_2      = val; break;
         case ALLEGRO_KEY_3:      key_3      = val; break;
-        case ALLEGRO_KEY_P:      key_p      = val; break;  // ← NOUVEAU
+        case ALLEGRO_KEY_P:      key_p      = val; break;
     }
 }
