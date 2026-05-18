@@ -13,24 +13,24 @@ int main(void) {
     ALLEGRO_EVENT       ev;
     int running, redraw;
 
-    /* --- Initialisation d'Allegro et de ses modules --- */
+//Initialisation d'Allegro et de ses modules
     if (!al_init()) return -1;
     al_install_keyboard();
     al_init_primitives_addon();
     al_init_font_addon();
-    al_init_ttf_addon();       /* necessaire pour charger des polices TTF */
-    al_init_image_addon();     /* necessaire pour charger les PNG */
+    al_init_ttf_addon();
+    al_init_image_addon();
 
     al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
-    /* Creation de la fenetre */
+    // Creation de la fenetre
     display = al_create_display(800, 600);
     al_set_window_title(display, "L'Invasion");
 
-    /* Timer a 60 FPS */
+    // Timer a 60 FPS
     timer = al_create_timer(1.0 / 60);
 
-    /* File d'evenements */
+    // File d'evenements
     queue = al_create_event_queue();
     al_register_event_source(queue, al_get_display_event_source(display));
     al_register_event_source(queue, al_get_keyboard_event_source());
