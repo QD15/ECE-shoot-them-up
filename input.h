@@ -12,8 +12,7 @@ extern int key_space, key_enter, key_escape;
 extern int key_1, key_2, key_3;
 extern int key_p;   // ← AJOUTER
 
-/* Met a jour les variables selon l'evenement recu */
+// Met a jour les variables selon l'evenement recu
 void input_handle_event(ALLEGRO_EVENT *ev);
 
 #endif
-
