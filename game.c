@@ -19,7 +19,10 @@
 #define DUREE_NIVEAU  3600   // 60 s x 60 fps
 
 #define NB_ETOILES 25
+#include <allegro5/allegro_audio.h>
 
+
+static ALLEGRO_AUDIO_STREAM *son = NULL;
 typedef struct {
     float x, y;
 } Etoile;
@@ -76,7 +79,11 @@ void game_init(void) {
     font_titre = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 52, 0);
     font_menu  = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 30, 0);
     font_hud   = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 20, 0);
-
+    son = al_load_audio_stream("son.wav", 4, 2048);
+    if (son) {
+        al_set_audio_stream_playmode(son, ALLEGRO_PLAYMODE_LOOP);
+        al_attach_audio_stream_to_mixer(son, al_get_default_mixer());
+    }
     if (!font_titre) font_titre = al_create_builtin_font();
     if (!font_menu)  font_menu  = al_create_builtin_font();
     if (!font_hud)   font_hud   = al_create_builtin_font();
@@ -452,4 +459,8 @@ void game_destroy(void) {
     al_destroy_font(font_titre);
     al_destroy_font(font_menu);
     al_destroy_font(font_hud);
+    if (son) {
+        al_destroy_audio_stream(son);
+        son = NULL;
+    }
 }
