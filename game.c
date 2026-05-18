@@ -9,31 +9,21 @@
 #include "enemy.h"
 #include "input.h"
 #define ETAT_PAUSE    5
-/* ============================================================
-   ETATS
-   ETAT_MENU     : menu titre
-   ETAT_JEU      : partie en cours
-   ETAT_BOSS     : combat contre le boss (niveau 3 uniquement)
-   ETAT_FIN      : game over
-   ETAT_VICTOIRE : niveau / boss vaincu
-   ============================================================ */
+
 #define ETAT_MENU     0
 #define ETAT_JEU      1
 #define ETAT_BOSS     2
 #define ETAT_FIN      3
 #define ETAT_VICTOIRE 4
 
-#define DUREE_NIVEAU  3600   /* 60 s x 60 fps */
+#define DUREE_NIVEAU  3600   // 60 s x 60 fps
 
-/* ============================================================
-   FOND ETOILE
-   ============================================================ */
 #define NB_ETOILES  40
 
 typedef struct {
     float x, y;
     float rayon;
-    unsigned char luminosite; /* 0-255 */
+    unsigned char luminosite; //0à255
 } Etoile;
 
 static Etoile etoiles[NB_ETOILES];
@@ -45,8 +35,8 @@ static void etoiles_init(void) {
     for (i = 0; i < NB_ETOILES; i++) {
         etoiles[i].x          = (float)(rand() % 800);
         etoiles[i].y          = (float)(rand() % 600);
-        etoiles[i].rayon      = 1.5f + (float)(rand() % 15) / 10.0f; /* 1.5-3.0 px */
-        etoiles[i].luminosite = 180 + rand() % 76;                    /* 180-255    */
+        etoiles[i].rayon      = 1.5f + (float)(rand() % 15) / 10.0f;
+        etoiles[i].luminosite = 180 + rand() % 76;
     }
 }
 
@@ -87,14 +77,11 @@ static int niveau;
 static int vies;
 
 #define VIES_MAX        3
-#define INVINCIBLE_DUREE 120  /* 2 s d'invincibilite apres un degat */
-static int invincible;        /* compteur frames d'invincibilite     */
+#define INVINCIBLE_DUREE 120  // 2 s d'invincibilite apres un degat
+static int invincible;        // compteur frames d'invincibilite
 
 static void demarrer_niveau(void);
 
-/* ============================================================
-   INITIALISATION
-   ============================================================ */
 void game_init(void) {
     font_titre = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 52, 0);
     font_menu  = al_load_ttf_font("C:/Windows/Fonts/arial.ttf", 30, 0);
@@ -118,10 +105,6 @@ void game_init(void) {
     ennemis_init(ennemis);
     balles_ene_init();
 }
-
-/* ============================================================
-   DEMARRER UN NIVEAU
-   ============================================================ */
 static void demarrer_niveau(void) {
     score = 0;
     frame = 0;
@@ -139,11 +122,6 @@ static void demarrer_niveau(void) {
     etat = ETAT_JEU;
 }
 
-
-
-/* ============================================================
-   COLLISIONS ENNEMIS NORMAUX
-   ============================================================ */
 static void verifier_collisions(void) {
     int i, j;
     float dx, dy;
@@ -190,11 +168,8 @@ static int joueur_touche_ennemi(void) {
     return 0;
 }
 
-/* ============================================================
-   COLLISIONS BOSS
-   ============================================================ */
 
-/* Balle joueur touche le boss -> retire 1 PV */
+// Balle joueur touche le boss -> retire 1 PV
 static void verifier_collisions_boss(void) {
     int i;
     float dx, dy;
@@ -209,14 +184,14 @@ static void verifier_collisions_boss(void) {
             boss.hp--;
             score++;
             if (boss.hp <= 0) {
-                boss.active = 0;   /* boss mort -> victoire */
+                boss.active = 0;   // boss mort -> victoire
                 etat = ETAT_VICTOIRE;
             }
         }
     }
 }
 
-/* Balle du boss touche le joueur */
+// Balle du boss touche le joueur
 static int boss_balle_touche_joueur(void) {
     int i;
     float dx, dy;
@@ -232,7 +207,7 @@ static int boss_balle_touche_joueur(void) {
     return 0;
 }
 
-/* Le joueur touche le boss directement */
+// Le joueur touche le boss directement
 static int joueur_touche_boss(void) {
     float dx, dy;
     if (!boss.active) return 0;
@@ -241,12 +216,8 @@ static int joueur_touche_boss(void) {
     return (dx > -PLAYER_W && dx < BOSS_W && dy > -PLAYER_H && dy < BOSS_H);
 }
 
-/* ============================================================
-   MISE A JOUR
-   ============================================================ */
 void game_update(void) {
 
-    // ← AJOUTER CE BLOC EN PREMIER
     static int prev_p = 0;
     if (key_p && !prev_p) {
         if (etat == ETAT_JEU  || etat == ETAT_BOSS)
@@ -256,11 +227,11 @@ void game_update(void) {
     }
     prev_p = key_p;
 
-    if (etat == ETAT_PAUSE) return;   // ← rien ne bouge en pause
-    /* Les etoiles defilent dans tous les etats (menu inclus) */
+    if (etat == ETAT_PAUSE) return;   //  rien ne bouge en pause
+    // Les etoiles defilent dans tous les etats (menu inclus)
     etoiles_update();
 
-    /* --- MENU --- */
+    //MENU
     if (etat == ETAT_MENU) {
         static int prev_1 = 0, prev_2 = 0, prev_3 = 0;
         if (key_1 && !prev_1) { niveau = 1; demarrer_niveau(); }
@@ -270,21 +241,19 @@ void game_update(void) {
         return;
     }
 
-    /* --- GAME OVER --- */
+    // GAME OVER
     if (etat == ETAT_FIN) {
         if (key_enter) etat = ETAT_MENU;
         return;
     }
 
-    /* --- VICTOIRE --- */
+    // VICTOIRE
     if (etat == ETAT_VICTOIRE) {
         if (key_enter) etat = ETAT_MENU;
         return;
     }
 
-    /* ================================================================
-       COMBAT BOSS (niveau 3 apres les 60 secondes)
-       ================================================================ */
+//Boss après 60 secondes
     if (etat == ETAT_BOSS) {
         player_update(&player, key_up, key_down, key_left, key_right, key_space);
         boss_update();
@@ -307,9 +276,6 @@ void game_update(void) {
         return;
     }
 
-    /* ================================================================
-       EN JEU (phase normale)
-       ================================================================ */
     player_update(&player, key_up, key_down, key_left, key_right, key_space);
     ennemis_update(ennemis);
     balles_ene_update();
@@ -336,10 +302,10 @@ void game_update(void) {
         player_init(&player);  /* repositionne le joueur */
     }
 
-    /* Fin des 60 secondes */
+    // Fin des 60 secondes
     if (frame >= DUREE_NIVEAU) {
         if (niveau == 3) {
-            /* Niveau 3 -> passer au combat boss */
+            // Niveau 3 passer au combat boss
             boss_init();
             etat = ETAT_BOSS;
         } else {
@@ -348,19 +314,17 @@ void game_update(void) {
     }
 }
 
-/* ============================================================
-   AFFICHAGE DES VIES (coeurs en bas a gauche)
-   ============================================================ */
+//affichage des vies
 static void draw_vies(void) {
     int i;
-    char coeur[4] = "\x03";  /* caractere coeur ASCII (affichage fallback) */
+    char coeur[4] = "\x03";
     float x = 10.0f;
     float y = 570.0f;
     for (i = 0; i < VIES_MAX; i++) {
         ALLEGRO_COLOR couleur = (i < vies)
-            ? al_map_rgb(255, 60, 80)    /* vie restante : rouge vif  */
-            : al_map_rgb(60, 60, 60);    /* vie perdue   : gris sombre */
-        /* Dessine un petit cercle plein comme icone de vie */
+            ? al_map_rgb(255, 60, 80)    // vie restante : rouge vif
+            : al_map_rgb(60, 60, 60);    // vie perdue: gris sombre
+        // Dessine un petit cercle plein comme icone de vie
         al_draw_filled_circle(x + 10, y + 8, 8, couleur);
         al_draw_circle(x + 10, y + 8, 8, al_map_rgb(200, 200, 200), 1.0f);
         x += 26.0f;
@@ -369,10 +333,7 @@ static void draw_vies(void) {
 }
 
 
-/* ============================================================
-   BARRE DE VIE DU BOSS
-   Affichee en haut au centre pendant ETAT_BOSS
-   ============================================================ */
+//Barre de vie du Boss
 static void draw_boss_hp_bar(void) {
     float ratio    = (float)boss.hp / (float)BOSS_HP_MAX;
     float bar_w    = 300.0f;
@@ -380,12 +341,12 @@ static void draw_boss_hp_bar(void) {
     float bar_y    = 10;
     float bar_h    = 18;
 
-    /* Fond gris */
+    // Fond gris
     al_draw_filled_rectangle(bar_x, bar_y,
         bar_x + bar_w, bar_y + bar_h,
         al_map_rgb(60, 60, 60));
 
-    /* Portion de vie restante : vert -> jaune -> rouge selon les PV */
+    // Portion de vie restante : vert -> jaune -> rouge selon les PV
     ALLEGRO_COLOR couleur;
     if (ratio > 0.6f)       couleur = al_map_rgb(80,  220, 80);
     else if (ratio > 0.3f)  couleur = al_map_rgb(255, 200,  0);
@@ -395,23 +356,19 @@ static void draw_boss_hp_bar(void) {
         bar_x + bar_w * ratio, bar_y + bar_h,
         couleur);
 
-    /* Contour */
+    //Contour
     al_draw_rectangle(bar_x, bar_y,
         bar_x + bar_w, bar_y + bar_h,
         al_map_rgb(200, 200, 200), 1.5f);
 
-    /* Label */
+    // Label
     al_draw_text(font_hud, al_map_rgb(255, 255, 255),
         400, bar_y + 22, ALLEGRO_ALIGN_CENTRE, "BOSS");
 }
 
-/* ============================================================
-   DESSIN
-   ============================================================ */
 void game_draw(void) {
     char buf[64];
     int  temps_restant;
-    // ← AJOUTER CE BLOC
     if (etat == ETAT_PAUSE) {
         al_draw_text(font_titre, al_map_rgb(255, 200, 0),
             400, 220, ALLEGRO_ALIGN_CENTRE, "PAUSE");
@@ -423,10 +380,10 @@ void game_draw(void) {
     }
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
-    /* Fond etoile dessine en premier (dans tous les etats) */
+    // Fond etoile dessine en premier (dans tous les etats)
     etoiles_draw();
 
-    /* --- MENU --- */
+    //MENU
     if (etat == ETAT_MENU) {
         al_draw_text(font_titre, al_map_rgb(100, 200, 255),
             400, 140, ALLEGRO_ALIGN_CENTRE, "L'INVASION");
@@ -439,7 +396,7 @@ void game_draw(void) {
         return;
     }
 
-    /* --- GAME OVER --- */
+    //GAME OVER
     if (etat == ETAT_FIN) {
         al_draw_text(font_titre, al_map_rgb(255, 80, 80),
             400, 200, ALLEGRO_ALIGN_CENTRE, "GAME OVER");
@@ -451,9 +408,9 @@ void game_draw(void) {
         return;
     }
 
-    /* --- VICTOIRE --- */
+    //VICTOIRE
     if (etat == ETAT_VICTOIRE) {
-        /* Message different si on vient de tuer le boss */
+        // Message different si on vient de tuer le boss
         if (niveau == 3)
             al_draw_text(font_titre, al_map_rgb(255, 215, 0),
                 400, 180, ALLEGRO_ALIGN_CENTRE, "BOSS VAINCU !");
@@ -469,7 +426,7 @@ void game_draw(void) {
         return;
     }
 
-    /* --- COMBAT BOSS --- */
+    //COMBAT BOSS
     if (etat == ETAT_BOSS) {
         boss_draw();
         boss_balles_draw();
@@ -482,7 +439,7 @@ void game_draw(void) {
         return;
     }
 
-    /* --- EN JEU --- */
+    //EN JEU
     ennemis_draw(ennemis);
     balles_ene_draw();
     player_draw(&player);
@@ -501,10 +458,6 @@ void game_draw(void) {
 
     draw_vies();
 }
-
-/* ============================================================
-   DESTRUCTION
-   ============================================================ */
 void game_destroy(void) {
     player_destroy(&player);
     ennemis_destroy();
