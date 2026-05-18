@@ -5,7 +5,8 @@
 #include <allegro5/allegro_image.h>
 #include "game.h"
 #include "input.h"
-
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 int main(void) {
     ALLEGRO_DISPLAY    *display;
     ALLEGRO_TIMER      *timer;
@@ -13,14 +14,16 @@ int main(void) {
     ALLEGRO_EVENT       ev;
     int running, redraw;
 
-//Initialisation d'Allegro et de ses modules
+    //Initialisation d'Allegro et de ses modules
     if (!al_init()) return -1;
     al_install_keyboard();
     al_init_primitives_addon();
     al_init_font_addon();
     al_init_ttf_addon();
     al_init_image_addon();
-
+    al_install_audio();
+    al_init_acodec_addon();
+    al_reserve_samples(1);
     al_set_new_display_flags(ALLEGRO_OPENGL | ALLEGRO_WINDOWED);
 
     // Creation de la fenetre
